@@ -1,15 +1,12 @@
 const axios = require('axios');
 const fs = require('fs')
-
 require('dotenv').config()
 
 const config = {
-  fileId: "IVX1zbW36ydRAcYkL0sSeEj",
-  UIKitPageName: "UI Kit",
-  colorPageName: "Primary Colors"
+  fileId: 'IVX1zW36ydRAcYkL0sSeEj',
+  UIKitPageName: 'UI Kit',
+  colorPageName: 'Primary Colors'
 }
-
-// const endpoint = 'https://www.figma.com/file/IVX1zW36ydRAcYkL0sSeEj/UI-Kit-API-Test';
 
 function getChildNodeByName(parentNode, name) {
   for (let i = 0; i < parentNode.children.length; i++) {
@@ -21,9 +18,7 @@ function getChildNodeByName(parentNode, name) {
   return null
 }
 
-const endpoint = 'https://api.figma.com/v1/files/IVX1zW36ydRAcYkL0sSeEj'
-
-let pages 
+const endpoint = `https://api.figma.com/v1/files/${config.fileId}`
 
 function getColorGroups(parentNode) {
   colorGroups = [];
@@ -52,7 +47,7 @@ function RGBToHex(r,g,b) {
 }
 
 function getColorValuesFromGroups(colorGroups) {
-  colorValues = {};
+  let colorValues = {};
 
   for (let i = 0; i < colorGroups.length; i++) {
     const colorGroup = colorGroups[i];
@@ -61,28 +56,30 @@ function getColorValuesFromGroups(colorGroups) {
         const name = colorBlock.children.find(x => x.name.includes('color-')).name;
         const rgba = colorBlock.children.find(x => x.name.includes('color-')).fills[0].color; // Might not be reliable
 
+        // Figma rgba values are returned as percentage in decimal value
+        // We need to multiply by 255 to get a browser readable rgba value
         const r = parseInt(rgba.r * 255);
         const g = parseInt(rgba.g * 255);
         const b = parseInt(rgba.b * 255);
         const hex = RGBToHex(r,g,b);
 
-        // const hex = colorBlock.children.find(x => x.type === 'TEXT' && x.name.includes('#')).name;
         colorValues[name] = hex;
+
       } else if (colorBlock.name.includes('colors-') && colorBlock.type === "GROUP") {
         // Nested Color Groups
         colorBlock.children.forEach((childColorBlock) => {
           if (childColorBlock.name === "Color Block" && childColorBlock.type === "GROUP") {
             const name = childColorBlock.children.find(x => x.name.includes('color-')).name;
             const rgba = childColorBlock.children.find(x => x.name.includes('color-')).fills[0].color; // Might not be reliable
+
+            // Figma rgba values are returned as percentage in decimal value
+            // We need to multiply by 255 to get a browser readable rgba value
             const r = parseInt(rgba.r * 255);
             const g = parseInt(rgba.g * 255);
             const b = parseInt(rgba.b * 255);
-
             const hex = RGBToHex(r,g,b);
 
-            // const hex = `#${childColorBlock.children.find(x => x.type === 'TEXT' && x.name.includes('#')).name.split('#').pop()}`;
             colorValues[name] = hex;
-            // colorValues[name] = rgba;
           }
         })
       }
@@ -92,43 +89,49 @@ function getColorValuesFromGroups(colorGroups) {
 }
 
 /**
- * [someFunction description]
- * @param  {Object} object Object where keys are variable names and values are colors as hexcodes 
- * @param  {String} styleType Either 'css' or 'scss' for determining how variables are defined
- * @return {String}      Completion status message 
+ * Write stylesheet from an object of styles from Figma
+ * @param  {Object} object      Object where keys are variable names and values are colors as hexcodes 
+ * @param  {String} styleType   Either 'css' or 'scss' for determining how variables are defined
+ * @return {String}             Completion status message 
  */
+function writeStylesFromColorObj(obj, styleType) {
+  const stylesheetName = styleType == 'scss' ? 'variables.scss' : 'variables.css'
+  const stream = fs.createWriteStream(stylesheetName, {
+    flags: 'a'
+  });
 
-function writeStylesFromColorObj(object, styleType) {
-  // param
+  if (styleType === 'scss') {
+    for (let k in obj) {
+      stream.write(`$${k}: ${obj[k]};\n`)
+    }
+  } else if (styleType ==='css') {
+    stream.write(':root {\n')
+    for (let k in obj) {
+      stream.write(`\t--${k}: ${obj[k]};\n`)
+    }
+    stream.write('}')
+  }
 
+  return "Complete"
 }
 
-function getFigmaData() {
-  axios.get(endpoint, {
+async function getColorValuesFromFigma() {
+  let figmaData = await axios.get(endpoint, {
     headers: {
       'X-Figma-Token': process.env.FIGMA_ACCESS_TOKEN
     }
-  })
-    .then((response) => {
-      const data = response.data;
-      const UIKitPage = getChildNodeByName(data.document, "UI Kit");
-      const colorPalette = getChildNodeByName(UIKitPage, "Color Palette");
-      const colorGroups = getColorGroups(colorPalette)
-      const colorValues = getColorValuesFromGroups(colorGroups);
+  });
 
-      const stream = fs.createWriteStream('variables.css', {
-        flags: 'a'
-      });
-
-      for (let k in colorValues) {
-        stream.write(`$${k}: ${colorValues[k]};\n`)
-      }
-
-      // console.log(colorValues);
-    })
-    .catch((error) => {
-      console.log(error);
-    })
+  // TODO: Clean up some of these declarations
+  const data = figmaData.data;
+  const UIKitPage = getChildNodeByName(data.document, "UI Kit");
+  const colorPalette = getChildNodeByName(UIKitPage, "Color Palette");
+  const colorGroups = getColorGroups(colorPalette)
+  const colorValues = getColorValuesFromGroups(colorGroups);
+  return colorValues
 }
 
-getFigmaData();
+(async () => {
+  const colorValues = await getColorValuesFromFigma()
+  writeStylesFromColorObj(colorValues, 'scss');
+})()
