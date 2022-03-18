@@ -8,6 +8,14 @@ const config = {
   colorPageName: 'Primary Colors'
 }
 
+const endpoint = `https://api.figma.com/v1/files/${config.fileId}`
+
+/**
+ * Get an object node's child by name key 
+ * @param  {Object} parentNode    The r value from the RGBA value of a figma node
+ * @param  {String} name          The string value of the matching child's 'name' key
+ * @return {Object}               The selected child node
+ */
 function getChildNodeByName(parentNode, name) {
   for (let i = 0; i < parentNode.children.length; i++) {
     let child = parentNode.children[i];
@@ -17,8 +25,6 @@ function getChildNodeByName(parentNode, name) {
   }
   return null
 }
-
-const endpoint = `https://api.figma.com/v1/files/${config.fileId}`
 
 function getColorGroups(parentNode) {
   colorGroups = [];
@@ -31,6 +37,13 @@ function getColorGroups(parentNode) {
   return colorGroups
 }
 
+/**
+ * Take in r,g,b values and convert them to a hexcode value 
+ * @param  {Integer} r   The r value from the RGBA value of a figma node
+ * @param  {Integer} g   The g value from the RGBA value of a figma node
+ * @param  {Integer} b   The b value from the RGBA value of a figma node
+ * @return {String}      A string representing the Hexcode of the converted RGB value
+ */
 function RGBToHex(r,g,b) {
   r = r.toString(16);
   g = g.toString(16);
@@ -46,6 +59,11 @@ function RGBToHex(r,g,b) {
   return "#" + r + g + b;
 }
 
+/**
+ * Take the parsed colorGroups from a Figma doc and return an object where keys are variable names and values are colors as hexcodes
+ * @param  {Array} colorGroups   Array of Object made from color groups in Figma
+ * @return {Object}              An object where keys are variable names and values are colors as hexcodes
+ */
 function getColorValuesFromGroups(colorGroups) {
   let colorValues = {};
 
