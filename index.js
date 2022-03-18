@@ -5,7 +5,8 @@ require('dotenv').config()
 const config = {
   fileId: 'IVX1zW36ydRAcYkL0sSeEj',
   UIKitPageName: 'UI Kit',
-  colorPageName: 'Primary Colors'
+  colorPageName: 'Primary Colors',
+  generatedFiletype: 'css', // 'css' or 'scss
 }
 
 const endpoint = `https://api.figma.com/v1/files/${config.fileId}`
@@ -26,6 +27,11 @@ function getChildNodeByName(parentNode, name) {
   return null
 }
 
+/**
+ * Return an array of color groups from a given Figma file node
+ * @param  {Object} parentNode  Figma file node
+ * @return {Array}              An array of color groups from the selected parent node
+ */
 function getColorGroups(parentNode) {
   colorGroups = [];
   for (let i = 0; i < parentNode.children.length; i++) {
@@ -151,5 +157,5 @@ async function getColorValuesFromFigma() {
 
 (async () => {
   const colorValues = await getColorValuesFromFigma()
-  writeStylesFromColorObj(colorValues, 'scss');
+  writeStylesFromColorObj(colorValues, config.generatedFiletype);
 })()
