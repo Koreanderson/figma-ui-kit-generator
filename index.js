@@ -6,7 +6,7 @@ const config = {
   fileId: 'IVX1zW36ydRAcYkL0sSeEj',
   UIKitPageName: 'UI Kit',
   colorPageName: 'Primary Colors',
-  generatedFiletype: 'css', // 'css' or 'scss
+  generatedFiletype: 'scss', // 'css' or 'scss
 }
 
 const endpoint = `https://api.figma.com/v1/files/${config.fileId}`
