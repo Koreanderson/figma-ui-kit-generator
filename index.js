@@ -1,7 +1,6 @@
-const axios = require('axios');
-const fs = require('fs')
-
-require('dotenv').config()
+import axios from 'axios'
+import fs from 'fs'
+import 'dotenv/config' 
 
 const config = {
   fileId: 'IVX1zW36ydRAcYkL0sSeEj',
@@ -34,7 +33,7 @@ function getChildNodeByName(parentNode, name) {
  * @return {Array}              An array of color groups from the selected parent node
  */
 function getColorGroups(parentNode) {
-  colorGroups = [];
+  let colorGroups = [];
   for (let i = 0; i < parentNode.children.length; i++) {
     let child = parentNode.children[i];
     if (child.type === "GROUP" && child.name.includes('colors--')) {
